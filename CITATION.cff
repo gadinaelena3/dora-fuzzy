@@ -1,0 +1,48 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite both the software and the manuscript."
+title: "Fuzzy DSS for AI-Augmented Software Development"
+abstract: >-
+  Reference implementation of a Mamdani-style fuzzy inference system that
+  classifies software-engineering project health under AI-augmented delivery,
+  using three input metrics (DSPD, LTBF, Qd) and a 12-rule expert-elicited
+  rule base.
+authors:
+  - family-names: Suduc
+    given-names: Ana-Maria
+    affiliation: "Valahia University of Târgoviște, Romania"
+    email: ana.suduc@valahia.ro
+  - family-names: Udrescu
+    given-names: Elena
+    affiliation: "Valahia University of Târgoviște, Romania"
+  - family-names: Bîzoi
+    given-names: Mihai
+    affiliation: "Valahia University of Târgoviște, Romania"
+  - family-names: Udrescu
+    given-names: Alexandru
+    affiliation: "Valahia University of Târgoviște, Romania"
+version: 0.2.0
+license: MIT
+repository-code: ""
+keywords:
+  - fuzzy inference
+  - decision support system
+  - AI-augmented software development
+  - software engineering metrics
+  - Mamdani
+preferred-citation:
+  type: article
+  title: >-
+    A Fuzzy Hybrid Decision Support System (DSS) to Govern Non-linear
+    Dynamics and Uncertainty in AI-Augmented Software Development
+  authors:
+    - family-names: Suduc
+      given-names: Ana-Maria
+    - family-names: Gădina
+      given-names: Elena
+    - family-names: Bîzoi
+      given-names: Mihai
+    - family-names: Udrescu
+      given-names: Alexandru
+  journal: "Journal of Systems and Software"
+  year: 2026
+  notes: "Manuscript JSSOFTWARE-D-26-00371, under revision."
