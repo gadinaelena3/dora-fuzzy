@@ -1,24 +1,32 @@
 {
   "n_observations": 144,
   "n_projects": 6,
-  "phs_mean": 59.32,
-  "phs_std": 12.08,
-  "phs_min": 11.09,
-  "phs_max": 85.97,
-  "phs_iqr": 11.64,
+  "phs_mean": 54.26,
+  "phs_std": 14.32,
+  "phs_min": 9.84,
+  "phs_max": 88.33,
+  "phs_iqr": 10.0,
   "state_distribution": {
-    "Sustainable": 89,
+    "Sustainable": 97,
     "At Risk": 19,
-    "High Performance": 31,
-    "Elite AI Maturity": 4,
-    "Critical Risk": 1
+    "High Performance": 20,
+    "Critical Risk": 5,
+    "Elite AI Maturity": 3
   },
-  "entropy_bits": 1.485,
+  "entropy_bits": 1.45,
   "entropy_max_bits": 2.322,
-  "entropy_normalised": 0.64,
-  "kruskal_H": 67.94,
-  "kruskal_p": 2.745452377070988e-13,
+  "entropy_normalised": 0.624,
+  "kruskal_H": 78.23,
+  "kruskal_p": 1.9687961773226446e-15,
   "kruskal_significant_05": true,
-  "no_rule_fallback_pct": 6.94,
-  "no_rule_fallback_n": 10
+  "no_rule_fallback_pct": 29.17,
+  "no_rule_fallback_n": 42,
+  "no_rule_fallback_by_project": {
+    "django": 7,
+    "kubernetes": 14,
+    "numpy": 1,
+    "react": 7,
+    "rust": 13,
+    "vscode": 0
+  }
 }

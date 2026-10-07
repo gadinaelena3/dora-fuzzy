@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, ReferenceLine, Cell,
@@ -6,15 +6,18 @@ import {
 import { api } from '../api/client';
 
 const AXIS_META = {
-  DSPD: { title: 'DSPD (Volume)', formula: 'clip(n_prs / mean_prs × k, 0, 50)', published_k: 14 },
-  LTBF: { title: 'LTBF (Value)',  formula: 'clip(median_cycle_days × k, 0, 30)', published_k: 8 },
-  Qd:   { title: 'Qd (Viability)', formula: 'clip(FTMR × 10 / (churn × k), 0, 10)', published_k: 3 },
+  DSPD: { title: 'DSPD (Volume)', formula: 'clip(n_prs / pre_ai_mean_prs × k, 0, 50)',
+          signal: 'merged PRs of the quarter / project Pre-AI quarterly mean', key: 'k_dspd' },
+  LTBF: { title: 'LTBF (Value)', formula: 'clip(median_cycle_days × k, 0, 30)',
+          signal: 'quarterly median PR cycle time (days)', key: 'k_ltbf' },
+  Qd:   { title: 'Qd (Viability)', formula: 'clip(FTMR × 10 / (churn × k), 0, 10)',
+          signal: 'first-time merge rate / churn ratio', key: 'k_qd' },
 };
+const signed = (x) => `${x > 0 ? '+' : x < 0 ? '−' : ''}${Math.abs(x).toFixed(3)}`;
 
-function AxisSweep({ axis, info, maxEntropy }) {
-  const chartData = info.rows.map((r) => ({
-    k: String(r.k), entropy: r.entropy, optimal: r.k === info.optimal_k,
-  }));
+function AxisEntropy({ axis, info, maxEntropy }) {
+  const chartData = info.rows.map((r) => ({ k: String(r.k), entropy: r.entropy, reported: r.reported }));
+  const reported = info.rows.find((r) => r.reported);
   return (
     <div className="panel">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
@@ -27,23 +30,24 @@ function AxisSweep({ axis, info, maxEntropy }) {
           <CartesianGrid stroke="var(--rule)" strokeDasharray="2 3" vertical={false} />
           <XAxis dataKey="k" tick={{ fontSize: 11, fill: 'var(--ink-3)' }} />
           <YAxis domain={[0, 1.6]} tick={{ fontSize: 10, fill: 'var(--ink-3)' }} />
-          <Tooltip contentStyle={{ fontSize: 12, fontFamily: 'var(--font-mono)',
+          <Tooltip formatter={(v) => [`${v} bits`, 'entropy']} labelFormatter={(l) => `k = ${l}`}
+                   contentStyle={{ fontSize: 12, fontFamily: 'var(--font-mono)',
                                    background: 'var(--paper)', border: '1px solid var(--ink)' }} />
           <ReferenceLine y={maxEntropy} stroke="var(--ink-3)" strokeDasharray="4 4"
                          label={{ value: `max log₂3 = ${maxEntropy}`, fontSize: 9,
                                   fill: 'var(--ink-3)', position: 'insideTopRight' }} />
           <Bar dataKey="entropy" radius={[2, 2, 0, 0]}>
             {chartData.map((d, i) => (
-              <Cell key={i} fill={d.optimal ? 'var(--accent)' : 'var(--paper-2)'}
-                    stroke={d.optimal ? 'var(--accent)' : 'var(--rule)'} />
+              <Cell key={i} fill={d.reported ? 'var(--accent)' : 'var(--paper-2)'}
+                    stroke={d.reported ? 'var(--accent)' : 'var(--rule)'} />
             ))}
           </Bar>
         </BarChart>
       </ResponsiveContainer>
       <p style={{ fontSize: '0.82rem', color: 'var(--ink-2)', marginTop: 'var(--s-2)' }}>
-        Entropy-maximising k on this sample = <strong>{info.optimal_k}</strong>
-        {' '}(H = {info.optimal_entropy} bits). Published calibration:
-        {' '}k = <strong>{AXIS_META[axis].published_k}</strong>.
+        Anchored k = <strong>{info.k}</strong> (highlighted; H = {reported.entropy} bits,
+        {' '}{info.labels.map((l) => `${reported.counts[l]} ${l}`).join(' / ')}).
+        {' '}Highest entropy among the candidates: k = {info.entropy_max_k} (H = {info.entropy_max} bits).
       </p>
     </div>
   );
@@ -54,39 +58,104 @@ export default function Calibration() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    api.sensitivity().then(setData).catch((e) => setError(e.message));
+    api.calibration().then(setData).catch((e) => setError(e.message));
   }, []);
 
-  if (error) return <div className="error-box">Failed to load sensitivity sweep: {error}</div>;
-  if (!data) return <p style={{ color: 'var(--ink-3)' }}>Sweeping scaling factors…</p>;
+  if (error) return <div className="error-box">Failed to load the calibration report: {error}</div>;
+  if (!data) return <p style={{ color: 'var(--ink-3)' }}>Computing the calibration report…</p>;
+
+  const axes = ['DSPD', 'LTBF', 'Qd'];
 
   return (
     <div>
       <div className="section-eyebrow">
-        Scaling-factor calibration
+        Scaling-factor calibration <span className="ref-tag">§5.2 · Addendum</span>
       </div>
-      <h2 className="section-title">Sensitivity analysis</h2>
+      <h2 className="section-title">Calibration anchored on the Pre-AI era</h2>
       <p className="section-lede">
-        Each proxy formula carries a free scaling parameter k. For every candidate k, every
-        project-quarter is assigned to the fuzzy set with the highest membership (peak
-        classification), and the Shannon entropy of the resulting three-zone distribution is
-        computed. The k that maximises entropy — distributing observations most evenly across
-        the linguistic zones — is the calibrated value. The contribution is the
-        <em> procedure</em>, not the parameter values themselves.
+        Each proxy formula carries a scaling factor k that maps a raw GitHub signal into a
+        fuzzy universe. The factors are fixed by an external anchor: each maps the pooled
+        median of the {data.n_pre_ai_project_quarters} Pre-AI project-quarters (2019–2020)
+        onto the human-baseline value that the paper assigns to that input. The Transition
+        and AI-era observations are not used, and nothing about the resulting distribution
+        is optimised.
       </p>
 
-      <div className="callout">
-        On the bundled illustrative sample the optima are
-        {' '}{Object.entries(data.axes).map(([ax, d], i, arr) => (
-          <span key={ax}>k<sub>{ax}</sub> = <strong>{d.optimal_k}</strong>{i < arr.length - 1 ? ', ' : ''}</span>
-        ))}.
-        The published calibration (k<sub>DSPD</sub>=14, k<sub>LTBF</sub>=8, k<sub>Qd</sub>=3) is
-        derived from live GitHub data; LTBF's sample optimum differs because the bundled sample
-        ships cycle-times already in DSS units. See <code>docs/METHODOLOGY.md 2</code>.
+      <div className="panel">
+        <h3 style={{ marginBottom: 'var(--s-4)' }}>Anchors and resulting factors</h3>
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Input</th>
+              <th>Raw signal</th>
+              <th className="num">Pooled Pre-AI median</th>
+              <th className="num">Anchor</th>
+              <th className="num">k</th>
+            </tr>
+          </thead>
+          <tbody>
+            {axes.map((axis) => (
+              <tr key={axis}>
+                <td><strong>{axis}</strong></td>
+                <td>{AXIS_META[axis].signal}</td>
+                <td className="num">{data.axes[axis].pooled_pre_ai_median}</td>
+                <td className="num">{data.axes[axis].anchor}</td>
+                <td className="num"><strong>{data.axes[axis].k}</strong></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
-      {['DSPD', 'LTBF', 'Qd'].map((axis) => (
-        <AxisSweep key={axis} axis={axis} info={data.axes[axis]} maxEntropy={data.max_entropy_bits} />
+      <div className="callout">
+        The anchor rests on one assumption, which the study does not test: that the typical
+        Pre-AI quarter of these six projects corresponds to the human baseline of the paper.
+        The membership functions are therefore not validated against the proxies.
+      </div>
+
+      <div className="panel">
+        <h3 style={{ marginBottom: 'var(--s-3)' }}>Held-out check</h3>
+        <p style={{ fontSize: '0.9rem', color: 'var(--ink-2)', marginBottom: 'var(--s-4)' }}>
+          For each project the factors are derived from the other five projects only, so that
+          none of its observations contributes to the factors applied to it.
+        </p>
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Held-out project</th>
+              <th className="num">k<sub>DSPD</sub></th>
+              <th className="num">k<sub>LTBF</sub></th>
+              <th className="num">k<sub>Qd</sub></th>
+              <th className="num">Cliff's δ</th>
+              <th className="num">p</th>
+              <th className="num">Quarters with a different state (of 24)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.held_out.map((h) => (
+              <tr key={h.project_id}>
+                <td><strong>{h.project_id}</strong></td>
+                <td className="num">{h.k_dspd}</td>
+                <td className="num">{h.k_ltbf}</td>
+                <td className="num">{h.k_qd}</td>
+                <td className="num">{signed(h.cliffs_delta)}</td>
+                <td className="num">{h.mwu_p.toFixed(4)}{h.significant_bonferroni ? ' ✓' : ''}</td>
+                <td className="num">{h.quarters_state_changed}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <h3 style={{ margin: 'var(--s-6) 0 var(--s-2)' }}>Entropy of the input zones (diagnostic)</h3>
+      <p style={{ fontSize: '0.9rem', color: 'var(--ink-2)', marginBottom: 'var(--s-4)' }}>
+        For each candidate k on one axis, every project-quarter is assigned to the fuzzy set
+        with the highest membership and the Shannon entropy of the three-zone distribution is
+        computed. An earlier version of the study selected k by maximising this entropy, which
+        was circular. It is shown here only to locate the anchored values.
+      </p>
+      {axes.map((axis) => (
+        <AxisEntropy key={axis} axis={axis} info={data.axes[axis]} maxEntropy={data.max_entropy_bits} />
       ))}
     </div>
   );

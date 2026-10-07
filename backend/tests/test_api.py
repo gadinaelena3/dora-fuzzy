@@ -73,3 +73,19 @@ def test_batch_rejects_missing_columns():
     files = {"file": ("bad.csv", io.BytesIO(csv.encode()), "text/csv")}
     r = client.post("/api/assess-batch", files=files)
     assert r.status_code == 400
+
+
+def test_study_endpoints():
+    r = client.get("/api/study")
+    assert r.status_code == 200
+    assert r.json()["discriminative_power"]["kruskal_H"] == 78.23
+    assert r.json()["active_rules"] == 12
+    r = client.get("/api/study/calibration")
+    assert r.status_code == 200
+    assert r.json()["scaling_factors"] == {"k_dspd": 12.18, "k_ltbf": 7.22, "k_qd": 4.35}
+
+
+def test_uncovered_combination_falls_back():
+    body = client.post("/api/assess", json={"project_name": "x", "dspd": 12, "ltbf": 20, "qd": 3}).json()
+    assert body["phs"] == 50.0
+    assert len(body["rule_activations"]) == 12

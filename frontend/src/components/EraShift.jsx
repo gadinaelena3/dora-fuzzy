@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, ReferenceLine, Legend,
@@ -10,15 +10,15 @@ const PROJECT_COLORS = {
   django: '#6e7d4a', numpy: '#3a352e', react: '#3f7050',
 };
 
-export default function EraShift({ ruleMode }) {
+export default function EraShift() {
   const [data, setData]   = useState(null);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    api.study(ruleMode)
+    api.study()
        .then((d) => { setData(d); setError(null); })
        .catch((e) => setError(e.message));
-  }, [ruleMode]);
+  }, []);
 
   if (error) return <div className="error-box">Failed to load era analysis: {error}</div>;
   if (!data) return <p style={{ color: 'var(--ink-3)' }}>Loading era comparison…</p>;
@@ -31,7 +31,9 @@ export default function EraShift({ ruleMode }) {
   });
   const chartData = data.quarters.map((q) => byQuarter[q] || { quarter: q });
   const projects = Object.keys(data.project_meta);
-  const sigCount = data.era_comparison.filter((e) => e.significant_05).length;
+  const sigCount = data.era_comparison.filter((e) => e.significant_bonferroni).length;
+  const wf = data.workflow_change;
+  const span = (r, unit = '') => `${r[0]}–${r[1]}${unit}`;
 
   return (
     <div>
@@ -44,7 +46,8 @@ export default function EraShift({ ruleMode }) {
         the Pre-AI baseline (2019–2020) against the AI-era (post-ChatGPT-GA, 2022-Q4 → 2024-Q4)
         with a Mann–Whitney U test and Cliff's δ effect size.
         <strong> {sigCount} of {data.era_comparison.length}</strong> projects show a
-        statistically significant shift (α = 0.05).
+        statistically significant shift at the Bonferroni-corrected threshold
+        (α′ = {data.alpha_bonferroni}).
       </p>
 
       <div className="panel">
@@ -112,7 +115,7 @@ export default function EraShift({ ruleMode }) {
                 <td className="num">{e.mwu_U}</td>
                 <td className="num">{e.mwu_p}</td>
                 <td className="num">{e.cliffs_delta > 0 ? '+' : ''}{e.cliffs_delta}</td>
-                <td>{e.significant_05
+                <td>{e.significant_bonferroni
                       ? <span style={{ color: 'var(--accent)', fontWeight: 700 }}>✓</span>
                       : <span style={{ color: 'var(--ink-3)' }}>—</span>}</td>
               </tr>
@@ -120,10 +123,63 @@ export default function EraShift({ ruleMode }) {
           </tbody>
         </table>
         <p style={{ fontSize: '0.8rem', color: 'var(--ink-3)', marginTop: 'var(--s-3)' }}>
-          Bundled-sample figures are illustrative and deterministic. The headline live-data
-          figures reported in 5 are produced by running <code>scripts/fetch_github.py</code>
-          (a GitHub token re-derives every number through the calibrated proxy layer).
+          Two-sided Mann–Whitney U on the quarterly PHS values (n = 8 Pre-AI, n = 9 AI-era);
+          Sig. marks p &lt; α′ = {data.alpha_bonferroni}.
         </p>
+      </div>
+
+      <div className="panel">
+        <h3 style={{ marginBottom: 'var(--s-3)' }}>Reading the {wf.project_id} shift</h3>
+        <p style={{ fontSize: '0.9rem', color: 'var(--ink-2)', marginBottom: 'var(--s-4)' }}>
+          The shift is not interpreted as an effect of AI adoption. In {wf.break_quarter}, two
+          quarters before the AI-era window opens, the population of merged pull requests of
+          this project changes: volume rises about fourfold, almost every pull request is
+          reviewed, and about nine in ten are merged by their own author. The volume and
+          cycle-time proxies cannot distinguish such a change in merge workflow from a change
+          in delivery performance.
+        </p>
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Per quarter (range)</th>
+              <th className="num">before {wf.break_quarter} ({wf.before.quarters} quarters)</th>
+              <th className="num">from {wf.break_quarter} ({wf.after.quarters} quarters)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Merged pull requests</td>
+                <td className="num">{span(wf.before.merged_prs)}</td>
+                <td className="num">{span(wf.after.merged_prs)}</td></tr>
+            <tr><td>Median cycle time</td>
+                <td className="num">{span(wf.before.median_cycle_hours, ' h')}</td>
+                <td className="num">{span(wf.after.median_cycle_hours, ' h')}</td></tr>
+            <tr><td>Merged within one hour</td>
+                <td className="num">{span(wf.before.merged_within_1h_pct, '%')}</td>
+                <td className="num">{span(wf.after.merged_within_1h_pct, '%')}</td></tr>
+            <tr><td>Merged without any review</td>
+                <td className="num">{span(wf.before.merged_without_review_pct, '%')}</td>
+                <td className="num">{span(wf.after.merged_without_review_pct, '%')}</td></tr>
+            <tr><td>Merged by their own author</td>
+                <td className="num">{span(wf.before.merged_by_own_author_pct, '%')}</td>
+                <td className="num">{span(wf.after.merged_by_own_author_pct, '%')}</td></tr>
+            <tr><td>From forks</td>
+                <td className="num">{span(wf.before.from_forks_pct, '%')}</td>
+                <td className="num">{span(wf.after.from_forks_pct, '%')}</td></tr>
+          </tbody>
+        </table>
+        <ul className="note-list">
+          <li>
+            rust-lang/rust: the score falls although volume rises and the cycle time shortens.
+            Its Pre-AI quarters match no rule and receive the fallback score of 50, which lies
+            above the consequent of Rule R10 (At Risk, 35) that fires afterwards. This is a
+            defect of the incomplete rule base, not a finding about the project.
+          </li>
+          <li>
+            An earlier version of the study reported a significant positive shift for
+            rust-lang/rust. It was produced by a data collection truncated at 1,000 pull
+            requests per quarter and has been withdrawn.
+          </li>
+        </ul>
       </div>
     </div>
   );

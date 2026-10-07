@@ -20,7 +20,6 @@ export default function App() {
   const [tab, setTab]       = useState('assess');
   const [curves, setCurves] = useState(null);
   const [bootError, setBootError] = useState(null);
-  const [ruleMode, setRuleMode]   = useState('base12');
 
   // Pre-fetch membership curves once at startup; the UI uses them everywhere.
   useEffect(() => {
@@ -59,8 +58,8 @@ export default function App() {
 
           {tab === 'assess' && <ProjectAssessment curves={curves} />}
           {tab === 'batch'  && <BatchUpload />}
-          {tab === 'study'  && <OSSStudy ruleMode={ruleMode} onRuleModeChange={setRuleMode} />}
-          {tab === 'era'    && <EraShift ruleMode={ruleMode} />}
+          {tab === 'study'  && <OSSStudy />}
+          {tab === 'era'    && <EraShift />}
           {tab === 'calib'  && <Calibration />}
           {tab === 'rules'  && <RuleBook />}
         </div>

@@ -1,0 +1,330 @@
+{
+  "scaling_factors": {
+    "k_dspd": 12.18,
+    "k_ltbf": 7.22,
+    "k_qd": 4.35
+  },
+  "anchors": {
+    "dspd": 12.0,
+    "ltbf": 7.0,
+    "qd": 3.0
+  },
+  "n_pre_ai_project_quarters": 48,
+  "max_entropy_bits": 1.585,
+  "axes": {
+    "DSPD": {
+      "labels": [
+        "low",
+        "average",
+        "high"
+      ],
+      "pooled_pre_ai_median": 0.986,
+      "anchor": 12.0,
+      "k": 12.18,
+      "rows": [
+        {
+          "k": 8,
+          "reported": false,
+          "counts": {
+            "low": 95,
+            "average": 36,
+            "high": 13
+          },
+          "entropy": 1.209
+        },
+        {
+          "k": 10,
+          "reported": false,
+          "counts": {
+            "low": 47,
+            "average": 81,
+            "high": 16
+          },
+          "entropy": 1.346
+        },
+        {
+          "k": 12.18,
+          "reported": true,
+          "counts": {
+            "low": 26,
+            "average": 91,
+            "high": 27
+          },
+          "entropy": 1.317
+        },
+        {
+          "k": 14,
+          "reported": false,
+          "counts": {
+            "low": 17,
+            "average": 71,
+            "high": 56
+          },
+          "entropy": 1.397
+        },
+        {
+          "k": 16,
+          "reported": false,
+          "counts": {
+            "low": 7,
+            "average": 59,
+            "high": 78
+          },
+          "entropy": 1.219
+        },
+        {
+          "k": 20,
+          "reported": false,
+          "counts": {
+            "low": 0,
+            "average": 32,
+            "high": 112
+          },
+          "entropy": 0.764
+        },
+        {
+          "k": 25,
+          "reported": false,
+          "counts": {
+            "low": 0,
+            "average": 12,
+            "high": 132
+          },
+          "entropy": 0.414
+        }
+      ],
+      "entropy_max_k": 14,
+      "entropy_max": 1.397
+    },
+    "LTBF": {
+      "labels": [
+        "rapid",
+        "nominal",
+        "sluggish"
+      ],
+      "pooled_pre_ai_median": 0.969,
+      "anchor": 7.0,
+      "k": 7.22,
+      "rows": [
+        {
+          "k": 3,
+          "reported": false,
+          "counts": {
+            "rapid": 95,
+            "nominal": 22,
+            "sluggish": 27
+          },
+          "entropy": 1.263
+        },
+        {
+          "k": 4,
+          "reported": false,
+          "counts": {
+            "rapid": 87,
+            "nominal": 28,
+            "sluggish": 29
+          },
+          "entropy": 1.364
+        },
+        {
+          "k": 5,
+          "reported": false,
+          "counts": {
+            "rapid": 70,
+            "nominal": 38,
+            "sluggish": 36
+          },
+          "entropy": 1.513
+        },
+        {
+          "k": 6,
+          "reported": false,
+          "counts": {
+            "rapid": 59,
+            "nominal": 39,
+            "sluggish": 46
+          },
+          "entropy": 1.564
+        },
+        {
+          "k": 7.22,
+          "reported": true,
+          "counts": {
+            "rapid": 45,
+            "nominal": 45,
+            "sluggish": 54
+          },
+          "entropy": 1.579
+        },
+        {
+          "k": 8,
+          "reported": false,
+          "counts": {
+            "rapid": 40,
+            "nominal": 49,
+            "sluggish": 55
+          },
+          "entropy": 1.573
+        },
+        {
+          "k": 10,
+          "reported": false,
+          "counts": {
+            "rapid": 34,
+            "nominal": 47,
+            "sluggish": 63
+          },
+          "entropy": 1.541
+        },
+        {
+          "k": 12,
+          "reported": false,
+          "counts": {
+            "rapid": 27,
+            "nominal": 35,
+            "sluggish": 82
+          },
+          "entropy": 1.411
+        }
+      ],
+      "entropy_max_k": 7.22,
+      "entropy_max": 1.579
+    },
+    "Qd": {
+      "labels": [
+        "fragile",
+        "stable",
+        "resilient"
+      ],
+      "pooled_pre_ai_median": 1.304,
+      "anchor": 3.0,
+      "k": 4.35,
+      "rows": [
+        {
+          "k": 2,
+          "reported": false,
+          "counts": {
+            "fragile": 3,
+            "stable": 27,
+            "resilient": 114
+          },
+          "entropy": 0.836
+        },
+        {
+          "k": 3,
+          "reported": false,
+          "counts": {
+            "fragile": 4,
+            "stable": 73,
+            "resilient": 67
+          },
+          "entropy": 1.154
+        },
+        {
+          "k": 4,
+          "reported": false,
+          "counts": {
+            "fragile": 10,
+            "stable": 105,
+            "resilient": 29
+          },
+          "entropy": 1.065
+        },
+        {
+          "k": 4.35,
+          "reported": true,
+          "counts": {
+            "fragile": 11,
+            "stable": 108,
+            "resilient": 25
+          },
+          "entropy": 1.033
+        },
+        {
+          "k": 5,
+          "reported": false,
+          "counts": {
+            "fragile": 16,
+            "stable": 116,
+            "resilient": 12
+          },
+          "entropy": 0.902
+        },
+        {
+          "k": 6,
+          "reported": false,
+          "counts": {
+            "fragile": 24,
+            "stable": 113,
+            "resilient": 7
+          },
+          "entropy": 0.917
+        }
+      ],
+      "entropy_max_k": 3,
+      "entropy_max": 1.154
+    }
+  },
+  "held_out": [
+    {
+      "project_id": "vscode",
+      "k_dspd": 12.14,
+      "k_ltbf": 5.38,
+      "k_qd": 4.44,
+      "cliffs_delta": 1.0,
+      "mwu_p": 0.0002,
+      "significant_bonferroni": true,
+      "quarters_state_changed": 3
+    },
+    {
+      "project_id": "react",
+      "k_dspd": 12.3,
+      "k_ltbf": 5.38,
+      "k_qd": 4.12,
+      "cliffs_delta": -0.153,
+      "mwu_p": 0.624,
+      "significant_bonferroni": false,
+      "quarters_state_changed": 5
+    },
+    {
+      "project_id": "kubernetes",
+      "k_dspd": 12.18,
+      "k_ltbf": 7.63,
+      "k_qd": 4.74,
+      "cliffs_delta": -0.306,
+      "mwu_p": 0.2858,
+      "significant_bonferroni": false,
+      "quarters_state_changed": 4
+    },
+    {
+      "project_id": "django",
+      "k_dspd": 12.14,
+      "k_ltbf": 7.43,
+      "k_qd": 3.97,
+      "cliffs_delta": -0.014,
+      "mwu_p": 1.0,
+      "significant_bonferroni": false,
+      "quarters_state_changed": 2
+    },
+    {
+      "project_id": "numpy",
+      "k_dspd": 12.3,
+      "k_ltbf": 5.58,
+      "k_qd": 4.12,
+      "cliffs_delta": -0.194,
+      "mwu_p": 0.4838,
+      "significant_bonferroni": false,
+      "quarters_state_changed": 4
+    },
+    {
+      "project_id": "rust",
+      "k_dspd": 12.3,
+      "k_ltbf": 7.63,
+      "k_qd": 4.74,
+      "cliffs_delta": -0.653,
+      "mwu_p": 0.015,
+      "significant_bonferroni": false,
+      "quarters_state_changed": 1
+    }
+  ]
+}

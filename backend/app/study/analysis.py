@@ -1,85 +1,63 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import math
 from collections import Counter
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 import numpy as np
 import pandas as pd
+import skfuzzy as fuzz
 from scipy import stats
 
 from app.core.fuzzy_engine import (
-    DSPD_PARAMS, LTBF_PARAMS, QD_PARAMS,
     DSPD_UNIVERSE, LTBF_UNIVERSE, QD_UNIVERSE,
-    _MFS_DSPD, _MFS_LTBF, _MFS_QD, infer,
+    _MFS_DSPD, _MFS_LTBF, _MFS_QD,
+    RULES, infer,
 )
-from app.study.proxies import CHURN_FLOOR
-
-import skfuzzy as fuzz
-
-# ---------------------------------------------------------------------------
-# Data location & era definitions
-# ---------------------------------------------------------------------------
-ROOT = Path(__file__).resolve().parents[3]
-BACKEND_ROOT = Path(__file__).resolve().parents[2]
-
-
-def _first_existing(*candidates: Path) -> Path:
-    for c in candidates:
-        if c.exists():
-            return c
-    return candidates[0]
-
-
-# Sample/derived data may live at the project root (local checkout) or inside
-# the backend image (Docker). Check both so the study loads in either layout.
-SAMPLE_CSV = _first_existing(
-    ROOT / "data" / "sample" / "quarterly_metrics.csv",
-    BACKEND_ROOT / "data" / "sample" / "quarterly_metrics.csv",
-)
-DERIVED_CSV = _first_existing(
-    ROOT / "data" / "derived" / "quarterly_metrics.csv",
-    BACKEND_ROOT / "data" / "derived" / "quarterly_metrics.csv",
+from app.study.proxies import (
+    ANCHORS, PRE_AI_QUARTERS, calibrate, derive_inputs, pooled_medians, pre_ai_baseline,
 )
 
+SIGNALS_CSV = Path(__file__).resolve().parents[2] / "data" / "study" / "quarterly_signals.csv"
+SOURCE = {
+    "description": "Merged pull requests collected from GitHub in October 2026",
+    "merged_prs_collected": 110481,
+    "bot_authored_excluded": 615,
+    "replication_package": "https://github.com/gadinaelena3/oss-dora-fuzzy",
+}
 ERAS = {
-    "pre_ai":     [f"{y}Q{q}" for y in (2019, 2020) for q in range(1, 5)],
+    "pre_ai": PRE_AI_QUARTERS,
     "transition": ["2021Q1", "2021Q2", "2021Q3", "2021Q4", "2022Q1", "2022Q2", "2022Q3"],
-    "ai_era":     ["2022Q4", "2023Q1", "2023Q2", "2023Q3", "2023Q4",
-                   "2024Q1", "2024Q2", "2024Q3", "2024Q4"],
+    "ai_era": ["2022Q4", "2023Q1", "2023Q2", "2023Q3", "2023Q4", "2024Q1", "2024Q2", "2024Q3", "2024Q4"],
 }
-
+ALPHA_BONFERRONI = 0.05 / 6
 PROJECT_META = {
-    "vscode":     {"repo": "microsoft/vscode",       "language": "TypeScript", "governance": "Corporate"},
-    "react":      {"repo": "facebook/react",         "language": "JavaScript", "governance": "Corporate-OSS"},
-    "kubernetes": {"repo": "kubernetes/kubernetes",  "language": "Go",         "governance": "Foundation"},
-    "django":     {"repo": "django/django",          "language": "Python",     "governance": "Foundation"},
-    "numpy":      {"repo": "numpy/numpy",            "language": "Python",     "governance": "Community"},
-    "rust":       {"repo": "rust-lang/rust",         "language": "Rust",       "governance": "Foundation"},
+    "vscode": {"repo": "microsoft/vscode", "language": "TypeScript", "governance": "Corporate"},
+    "react": {"repo": "facebook/react", "language": "JavaScript", "governance": "Corporate-OSS"},
+    "kubernetes": {"repo": "kubernetes/kubernetes", "language": "Go", "governance": "Foundation"},
+    "django": {"repo": "django/django", "language": "Python", "governance": "Foundation"},
+    "numpy": {"repo": "numpy/numpy", "language": "Python", "governance": "Community"},
+    "rust": {"repo": "rust-lang/rust", "language": "Rust", "governance": "Foundation"},
+}
+MILESTONES = {"Copilot beta": "2021Q2", "ChatGPT GA": "2022Q4", "GPT-4": "2023Q1"}
+WORKFLOW_BREAK = "2022Q2"
+ENTROPY_GRID = {
+    "DSPD": [8, 10, None, 14, 16, 20, 25],
+    "LTBF": [3, 4, 5, 6, None, 8, 10, 12],
+    "Qd": [2, 3, 4, None, 5, 6],
+}
+_AXIS = {
+    "DSPD": ("k_dspd", "dspd", DSPD_UNIVERSE, _MFS_DSPD, ["low", "average", "high"]),
+    "LTBF": ("k_ltbf", "ltbf", LTBF_UNIVERSE, _MFS_LTBF, ["rapid", "nominal", "sluggish"]),
+    "Qd": ("k_qd", "qd", QD_UNIVERSE, _MFS_QD, ["fragile", "stable", "resilient"]),
 }
 
-# Milestone markers (quarter index on the 24-quarter axis) for UI dashed lines.
-MILESTONES = {"Copilot beta": "2021Q3", "ChatGPT GA": "2022Q4", "GPT-4": "2023Q2"}
+
+def load_signals() -> pd.DataFrame:
+    return pd.read_csv(SIGNALS_CSV)
 
 
-# ---------------------------------------------------------------------------
-# Data loading
-# ---------------------------------------------------------------------------
-def load_sample() -> tuple[pd.DataFrame, str]:
-    """Prefer live-fetched derived data; fall back to bundled sample."""
-    if DERIVED_CSV.exists():
-        return pd.read_csv(DERIVED_CSV), "live"
-    if SAMPLE_CSV.exists():
-        return pd.read_csv(SAMPLE_CSV), "sample"
-    # Last resort: regenerate the bundled sample in-memory.
-    from app.study.profiles import generate_sample
-    return generate_sample(), "generated"
-
-
-# ---------------------------------------------------------------------------
-# Apply DSS to every project-quarter
-# ---------------------------------------------------------------------------
 def apply_dss(df: pd.DataFrame) -> pd.DataFrame:
     records = []
     for _, r in df.iterrows():
@@ -87,9 +65,11 @@ def apply_dss(df: pd.DataFrame) -> pd.DataFrame:
         fired = [a["id"] for a in result.rule_activations if a["firing_strength"] > 0]
         records.append({
             "project_id": r["project_id"], "quarter": r["quarter"],
-            "dspd": round(float(r["dspd"]), 2),
-            "ltbf": round(float(r["ltbf"]), 2),
-            "qd": round(float(r["qd"]), 2),
+            "n_prs": int(r["n_prs"]),
+            "median_cycle_hours": round(float(r["median_cycle_days"]) * 24, 2),
+            "first_time_merge_rate": round(float(r["first_time_merge_rate"]), 3),
+            "churn_ratio": round(float(r["churn_ratio"]), 3),
+            "dspd": float(r["dspd"]), "ltbf": float(r["ltbf"]), "qd": float(r["qd"]),
             "phs": result.phs,
             "linguistic_state": result.linguistic_state,
             "rules_fired": ",".join(fired) if fired else "NONE",
@@ -99,47 +79,41 @@ def apply_dss(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _cliffs_delta(a, b) -> float:
-    a, b = np.asarray(a), np.asarray(b)
-    n_gt = sum((x > y) for x in a for y in b)
-    n_lt = sum((x < y) for x in a for y in b)
-    return (n_gt - n_lt) / (len(a) * len(b))
+    gt = sum(x > y for x in a for y in b)
+    lt = sum(x < y for x in a for y in b)
+    return (gt - lt) / (len(a) * len(b))
 
 
 def era_comparison(df: pd.DataFrame) -> List[Dict]:
     pre, ai = set(ERAS["pre_ai"]), set(ERAS["ai_era"])
     out = []
     for pid, sub in df.groupby("project_id"):
-        pre_phs = sub.loc[sub["quarter"].isin(pre), "phs"].values
-        ai_phs = sub.loc[sub["quarter"].isin(ai), "phs"].values
-        if len(pre_phs) < 2 or len(ai_phs) < 2:
-            continue
-        u, p = stats.mannwhitneyu(ai_phs, pre_phs, alternative="two-sided")
+        a = sub.loc[sub["quarter"].isin(pre), "phs"].values
+        b = sub.loc[sub["quarter"].isin(ai), "phs"].values
+        u, p = stats.mannwhitneyu(b, a, alternative="two-sided")
         out.append({
             "project_id": pid,
             "repo": PROJECT_META.get(pid, {}).get("repo", pid),
-            "n_pre": len(pre_phs), "n_ai": len(ai_phs),
-            "phs_pre_mean": round(float(np.mean(pre_phs)), 2),
-            "phs_ai_mean": round(float(np.mean(ai_phs)), 2),
-            "phs_shift": round(float(np.mean(ai_phs) - np.mean(pre_phs)), 2),
+            "n_pre": len(a), "n_ai": len(b),
+            "phs_pre_mean": round(float(np.mean(a)), 2),
+            "phs_ai_mean": round(float(np.mean(b)), 2),
+            "phs_shift": round(float(np.mean(b) - np.mean(a)), 2),
             "mwu_U": round(float(u), 2),
             "mwu_p": round(float(p), 4),
-            "cliffs_delta": round(float(_cliffs_delta(ai_phs, pre_phs)), 3),
+            "cliffs_delta": round(float(_cliffs_delta(b, a)), 3),
             "significant_05": bool(p < 0.05),
+            "significant_bonferroni": bool(p < ALPHA_BONFERRONI),
         })
     return sorted(out, key=lambda r: -r["phs_shift"])
 
 
 def discriminative_power(df: pd.DataFrame) -> Dict:
     phs = df["phs"].values
-    states = df["linguistic_state"].values
-    counts = Counter(states)
-    total = sum(counts.values())
-    probs = np.array([c / total for c in counts.values()])
-    entropy_bits = float(-(probs * np.log2(probs)).sum())
-    entropy_max = float(np.log2(5))
-    groups = [g["phs"].values for _, g in df.groupby("project_id")]
-    h, p = stats.kruskal(*groups)
-    fallback_pct = float((df["rules_fired"] == "NONE").sum()) / len(df) * 100
+    counts = Counter(df["linguistic_state"].values)
+    probs = np.array(list(counts.values())) / len(df)
+    entropy = float(-(probs * np.log2(probs)).sum())
+    h, p = stats.kruskal(*[g["phs"].values for _, g in df.groupby("project_id")])
+    fallback = df["rules_fired"] == "NONE"
     return {
         "n_observations": int(len(df)),
         "n_projects": int(df["project_id"].nunique()),
@@ -149,41 +123,51 @@ def discriminative_power(df: pd.DataFrame) -> Dict:
         "phs_max": round(float(np.max(phs)), 2),
         "phs_iqr": round(float(np.percentile(phs, 75) - np.percentile(phs, 25)), 2),
         "state_distribution": dict(counts),
-        "entropy_bits": round(entropy_bits, 3),
-        "entropy_max_bits": round(entropy_max, 3),
-        "entropy_normalised": round(entropy_bits / entropy_max, 3),
+        "entropy_bits": round(entropy, 3),
+        "entropy_max_bits": round(float(np.log2(5)), 3),
+        "entropy_normalised": round(entropy / float(np.log2(5)), 3),
         "kruskal_H": round(float(h), 2),
         "kruskal_p": float(p),
         "kruskal_significant_05": bool(p < 0.05),
-        "no_rule_fallback_pct": round(fallback_pct, 2),
-        "no_rule_fallback_n": int((df["rules_fired"] == "NONE").sum()),
+        "no_rule_fallback_pct": round(float(fallback.mean() * 100), 2),
+        "no_rule_fallback_n": int(fallback.sum()),
+        "no_rule_fallback_by_project": {k: int(v) for k, v in fallback.groupby(df["project_id"]).sum().items()},
     }
 
 
-# ---------------------------------------------------------------------------
-# Top-level study runner (consumed by /api/study)
-# ---------------------------------------------------------------------------
-def run_study(rule_mode: str = "base12") -> Dict:
-    """Run the full study and return everything the UI needs.
+def _span(s: pd.Series, scale: float = 1.0, digits: int = 1) -> List[float]:
+    return [round(float(s.min()) * scale, digits), round(float(s.max()) * scale, digits)]
 
-    rule_mode: 'base12' (default-of-record, the manuscript's 12-rule base) or
-    'extended27' (the completed rule base; see fuzzy_engine.set_rule_mode).
-    """
-    from app.core.fuzzy_engine import set_rule_mode, active_rule_count
-    set_rule_mode(rule_mode)
 
-    df_raw, source = load_sample()
-    df = apply_dss(df_raw)
+def workflow_change(signals: pd.DataFrame, project: str = "vscode") -> Dict:
+    s = signals[signals["project_id"] == project]
+    out = {"project_id": project, "break_quarter": WORKFLOW_BREAK}
+    for label, part in (("before", s[s["quarter"] < WORKFLOW_BREAK]), ("after", s[s["quarter"] >= WORKFLOW_BREAK])):
+        out[label] = {
+            "quarters": int(len(part)),
+            "merged_prs": [int(part["n_prs"].min()), int(part["n_prs"].max())],
+            "median_cycle_hours": _span(part["median_cycle_days"], 24),
+            "merged_within_1h_pct": _span(part["share_under_1h"], 100),
+            "merged_without_review_pct": _span(part["share_no_review"], 100),
+            "merged_by_own_author_pct": _span(part["share_self_merged"], 100),
+            "from_forks_pct": _span(part["share_from_fork"], 100),
+        }
+    return out
 
-    timeseries = df.to_dict(orient="records")
-    dp = discriminative_power(df)
-    eras = era_comparison(df)
 
-    # Heatmap matrix: project × quarter → state (ordered for the UI)
+def _run(signals: pd.DataFrame, k: Dict, baseline: pd.Series) -> pd.DataFrame:
+    return apply_dss(derive_inputs(signals, k, baseline))
+
+
+def run_study() -> Dict:
+    signals = load_signals()
+    k = calibrate(signals)
+    baseline = pre_ai_baseline(signals)
+    df = _run(signals, k, baseline)
+
     quarters = ERAS["pre_ai"] + ERAS["transition"] + ERAS["ai_era"]
-    project_order = list(PROJECT_META.keys())
     heatmap = []
-    for pid in project_order:
+    for pid in PROJECT_META:
         sub = df[df["project_id"] == pid].set_index("quarter")
         heatmap.append({
             "project_id": pid,
@@ -192,91 +176,85 @@ def run_study(rule_mode: str = "base12") -> Dict:
                 "quarter": q,
                 "state": sub.loc[q, "linguistic_state"] if q in sub.index else None,
                 "phs": float(sub.loc[q, "phs"]) if q in sub.index else None,
+                "fallback": bool(sub.loc[q, "rules_fired"] == "NONE") if q in sub.index else None,
             } for q in quarters],
         })
 
     return {
-        "source": source,
-        "rule_mode": rule_mode,
-        "active_rules": active_rule_count(),
+        "source": SOURCE,
+        "n_pull_requests": int(signals["n_prs"].sum()),
+        "active_rules": len(RULES),
+        "scaling_factors": k,
+        "alpha_bonferroni": round(ALPHA_BONFERRONI, 4),
         "quarters": quarters,
         "milestones": MILESTONES,
         "project_meta": PROJECT_META,
-        "discriminative_power": dp,
-        "era_comparison": eras,
-        "timeseries": timeseries,
+        "discriminative_power": discriminative_power(df),
+        "era_comparison": era_comparison(df),
+        "workflow_change": workflow_change(signals),
+        "timeseries": df.to_dict(orient="records"),
         "heatmap": heatmap,
     }
 
 
-# ---------------------------------------------------------------------------
-# Sensitivity sweep (reproduces Addendum Table XI; consumed by /api/study/sensitivity)
-# ---------------------------------------------------------------------------
-_LABELS = {
-    "DSPD": ["low", "average", "high"],
-    "LTBF": ["rapid", "nominal", "sluggish"],
-    "Qd":   ["fragile", "stable", "resilient"],
-}
-_UNIVERSES = {"DSPD": DSPD_UNIVERSE, "LTBF": LTBF_UNIVERSE, "Qd": QD_UNIVERSE}
-_MFS = {"DSPD": _MFS_DSPD, "LTBF": _MFS_LTBF, "Qd": _MFS_QD}
-
-KS_GRID = {
-    "DSPD": [8, 10, 12, 14, 15, 16, 18, 20, 25, 30, 35],
-    "LTBF": [2, 3, 4, 5, 6, 7, 8, 10, 12],
-    "Qd":   [1, 1.5, 2, 2.5, 3, 4, 5, 6, 8],
-}
+def _zone(axis: str, value: float) -> str:
+    _, _, universe, mfs, labels = _AXIS[axis]
+    mu = {lbl: float(fuzz.interp_membership(universe, mfs[lbl], value)) for lbl in labels}
+    return max(labels, key=lambda lbl: mu[lbl])
 
 
-def _classify(axis: str, value: float) -> str:
-    universe = _UNIVERSES[axis]
-    best = _LABELS[axis][0]
-    best_mu = float(fuzz.interp_membership(universe, _MFS[axis][best], value))
-    for lbl in _LABELS[axis][1:]:
-        mu = float(fuzz.interp_membership(universe, _MFS[axis][lbl], value))
-        if mu > best_mu:
-            best, best_mu = lbl, mu
-    return best
-
-
-def _shannon(counts: Dict[str, int]) -> float:
+def _entropy(counts: Dict[str, int]) -> float:
     n = sum(counts.values())
-    if n == 0:
-        return 0.0
-    h = 0.0
-    for c in counts.values():
-        if c > 0:
-            p = c / n
-            h -= p * math.log2(p)
-    return h
+    return -sum(c / n * math.log2(c / n) for c in counts.values() if c > 0)
 
 
-def sensitivity_sweep() -> Dict:
-    df_raw, source = load_sample()
-    df = df_raw.copy()
-    df["project_mean_prs"] = df.groupby("project_id")["n_prs"].transform("mean")
+def calibration_report() -> Dict:
+    signals = load_signals()
+    k0 = calibrate(signals)
+    baseline = pre_ai_baseline(signals)
+    medians = pooled_medians(signals)
 
-    def scaled(axis, k):
-        if axis == "DSPD":
-            return np.clip(df["n_prs"] / df["project_mean_prs"] * k, 0, 50).values
-        if axis == "LTBF":
-            return np.clip(df["median_cycle_days"] * k, 0, 30).values
-        return np.clip(df["first_time_merge_rate"] * 10
-                       / (df["churn_ratio"].clip(lower=CHURN_FLOOR) * k), 0, 10).values
-
-    result = {"source": source, "max_entropy_bits": round(math.log2(3), 4), "axes": {}}
-    for axis in ("DSPD", "LTBF", "Qd"):
+    axes = {}
+    for axis, (key, col, _, _, labels) in _AXIS.items():
         rows = []
-        for k in KS_GRID[axis]:
-            vals = scaled(axis, k)
-            counts = {lbl: 0 for lbl in _LABELS[axis]}
-            for v in vals:
-                counts[_classify(axis, v)] += 1
-            rows.append({"k": k, "counts": counts, "entropy": round(_shannon(counts), 4)})
+        for cand in ENTROPY_GRID[axis]:
+            k = dict(k0, **({key: cand} if cand is not None else {}))
+            values = derive_inputs(signals, k, baseline)[col]
+            counts = {lbl: 0 for lbl in labels}
+            for v in values:
+                counts[_zone(axis, float(v))] += 1
+            rows.append({"k": k[key], "reported": cand is None, "counts": counts, "entropy": round(_entropy(counts), 3)})
         best = max(rows, key=lambda r: r["entropy"])
-        result["axes"][axis] = {
-            "labels": _LABELS[axis],
+        axes[axis] = {
+            "labels": labels,
+            "pooled_pre_ai_median": round(medians[col], 3),
+            "anchor": ANCHORS[col],
+            "k": k0[key],
             "rows": rows,
-            "optimal_k": best["k"],
-            "optimal_entropy": best["entropy"],
+            "entropy_max_k": best["k"],
+            "entropy_max": best["entropy"],
         }
-    return result
+
+    reference = _run(signals, k0, baseline)
+    held_out = []
+    for pid in PROJECT_META:
+        k = calibrate(signals[signals["project_id"] != pid])
+        own = signals[signals["project_id"] == pid]
+        d = _run(own, k, baseline)
+        ref = reference[reference["project_id"] == pid]
+        era = era_comparison(d)[0]
+        held_out.append({
+            "project_id": pid, **k,
+            "cliffs_delta": era["cliffs_delta"], "mwu_p": era["mwu_p"],
+            "significant_bonferroni": era["significant_bonferroni"],
+            "quarters_state_changed": int((d["linguistic_state"].values != ref["linguistic_state"].values).sum()),
+        })
+
+    return {
+        "scaling_factors": k0,
+        "anchors": ANCHORS,
+        "n_pre_ai_project_quarters": int(signals["quarter"].isin(PRE_AI_QUARTERS).sum()),
+        "max_entropy_bits": round(math.log2(3), 4),
+        "axes": axes,
+        "held_out": held_out,
+    }

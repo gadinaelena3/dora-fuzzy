@@ -1,89 +1,59 @@
-﻿"""
-Regression tests for the OSS study integration.
-
-These guard against the single most dangerous failure mode for the revision:
-silent drift between the executable code, the manuscript 5, and the Addendum
-Table XI. If any scaling factor, rule count, or headline study figure changes,
-these tests fail loudly.
-"""
 import math
 
-from app.core.fuzzy_engine import (
-    RULES, EXTENDED_RULES, set_rule_mode, active_rule_count,
-)
-from app.study import K_DSPD, K_LTBF, K_QD, CHURN_FLOOR
-from app.study.analysis import run_study, sensitivity_sweep
+from app.core.fuzzy_engine import RULES
+from app.study import ANCHORS, CHURN_FLOOR
+from app.study.analysis import calibration_report, load_signals, run_study
 
 
-# ---------------------------------------------------------------------------
-# Calibration constants must match the manuscript 5.2 and Addendum Table XI.
-# ---------------------------------------------------------------------------
-def test_scaling_factors_locked():
-    assert K_DSPD == 14, "k_DSPD drifted from the published calibration (14)."
-    assert K_LTBF == 8, "k_LTBF drifted from the published calibration (8)."
-    assert K_QD == 3, "k_Qd drifted from the published calibration (3)."
-    assert CHURN_FLOOR == 0.05
-
-
-def test_churn_floor_never_binds_on_sample():
-    """The Addendum claims the 0.05 floor is never active (min churn 0.078)."""
-    import pandas as pd
-    from app.study.analysis import SAMPLE_CSV
-    df = pd.read_csv(SAMPLE_CSV)
+def test_signals_cover_the_study_window():
+    df = load_signals()
+    assert len(df) == 144
+    assert df["project_id"].nunique() == 6
+    assert int(df["n_prs"].sum()) == 109866
+    assert int(df["n_bot_prs"].sum()) == 615
     assert df["churn_ratio"].min() > CHURN_FLOOR
 
 
-# ---------------------------------------------------------------------------
-# Rule bases
-# ---------------------------------------------------------------------------
-def test_base_rule_base_is_twelve():
-    assert len(RULES) == 12, "Table VI must contain exactly 12 rules."
+def test_anchored_scaling_factors():
+    assert ANCHORS == {"dspd": 12.0, "ltbf": 7.0, "qd": 3.0}
+    assert run_study()["scaling_factors"] == {"k_dspd": 12.18, "k_ltbf": 7.22, "k_qd": 4.35}
 
 
-def test_extended_rule_base_is_full_coverage():
-    assert len(EXTENDED_RULES) == 27
-    combos = {(d, l, q) for d, l, q, _, _ in EXTENDED_RULES}
-    assert len(combos) == 27, "Extended base must cover all 3x3x3 antecedents."
+def test_rule_base_is_the_twelve_rules_of_the_paper():
+    assert len(RULES) == 12
+    assert len({(d, l, q) for d, l, q, _, _ in RULES}) == 12
 
 
-def test_rule_mode_toggle():
-    set_rule_mode("base12")
-    assert active_rule_count() == 12
-    set_rule_mode("extended27")
-    assert active_rule_count() == 27
-    set_rule_mode("base12")  # restore default-of-record
-
-
-# ---------------------------------------------------------------------------
-# Study reproducibility (bundled sample is deterministic)
-# ---------------------------------------------------------------------------
-def test_study_shape():
-    s = run_study("base12")
+def test_study_matches_the_manuscript():
+    s = run_study()
     dp = s["discriminative_power"]
     assert dp["n_observations"] == 144
-    assert dp["n_projects"] == 6
-    assert len(s["era_comparison"]) == 6
-    assert len(s["heatmap"]) == 6
+    assert dp["state_distribution"] == {
+        "Sustainable": 97, "High Performance": 20, "At Risk": 19, "Critical Risk": 5, "Elite AI Maturity": 3,
+    }
+    assert dp["kruskal_H"] == 78.23
+    assert dp["no_rule_fallback_pct"] == 29.17
+    assert dp["entropy_bits"] == 1.45
+    assert (dp["phs_min"], dp["phs_max"]) == (9.84, 88.33)
 
 
-def test_extended_mode_reduces_fallback():
-    base = run_study("base12")["discriminative_power"]["no_rule_fallback_pct"]
-    ext = run_study("extended27")["discriminative_power"]["no_rule_fallback_pct"]
-    set_rule_mode("base12")
-    assert ext <= base
-    assert ext == 0.0, "Full 27-rule coverage must eliminate the fallback."
+def test_era_comparison_matches_table_xi():
+    eras = {e["project_id"]: e for e in run_study()["era_comparison"]}
+    expected = {
+        "vscode": (16.02, 0.0002, 1.0), "django": (1.97, 0.8817, -0.056), "numpy": (-2.89, 0.6278, -0.139),
+        "rust": (-7.86, 0.0907, -0.458), "kubernetes": (-9.15, 0.4508, -0.208), "react": (-10.13, 0.0536, -0.556),
+    }
+    for pid, (shift, p, delta) in expected.items():
+        assert (eras[pid]["phs_shift"], eras[pid]["mwu_p"], eras[pid]["cliffs_delta"]) == (shift, p, delta)
+    assert [pid for pid, e in eras.items() if e["significant_bonferroni"]] == ["vscode"]
 
 
-def test_sensitivity_optima():
-    sw = sensitivity_sweep()
-    # DSPD and Qd optima match the published calibration on the bundled sample.
-    assert sw["axes"]["DSPD"]["optimal_k"] == 14
-    assert sw["axes"]["Qd"]["optimal_k"] == 3
-    assert sw["max_entropy_bits"] == round(math.log2(3), 4)
-
-
-def test_era_significance_pattern():
-    """vscode and rust show significant positive AI-era shifts (manuscript Table X)."""
-    eras = {e["project_id"]: e for e in run_study("base12")["era_comparison"]}
-    assert eras["vscode"]["significant_05"] and eras["vscode"]["phs_shift"] > 0
-    assert eras["rust"]["significant_05"] and eras["rust"]["phs_shift"] > 0
+def test_calibration_report():
+    c = calibration_report()
+    assert c["max_entropy_bits"] == round(math.log2(3), 4)
+    assert c["axes"]["LTBF"]["entropy_max_k"] == 7.22
+    assert c["axes"]["DSPD"]["entropy_max_k"] == 14
+    assert c["axes"]["Qd"]["entropy_max_k"] == 3
+    held = {h["project_id"]: h for h in c["held_out"]}
+    assert sum(h["quarters_state_changed"] for h in held.values()) == 19
+    assert [pid for pid, h in held.items() if h["significant_bonferroni"]] == ["vscode"]

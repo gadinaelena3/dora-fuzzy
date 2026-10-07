@@ -544,6 +544,11 @@ table.data-table {
 .state-dot[data-state="Sustainable"]      { background: var(--state-sustainable); }
 .state-dot[data-state="High Performance"] { background: var(--state-high); }
 .state-dot[data-state="Elite AI"]         { background: var(--state-elite); }
+.state-dot.is-fallback {
+  background: transparent; box-shadow: inset 0 0 0 2px var(--state-sustainable);
+}
+.note-list { margin: var(--s-3) 0 0; padding-left: 1.1rem; font-size: 0.86rem; color: var(--ink-2); }
+.note-list li { margin-bottom: var(--s-2); }
 .hm-legend {
   display: flex; flex-wrap: wrap; gap: var(--s-4);
   margin-top: var(--s-4); font-size: 0.76rem; color: var(--ink-2);

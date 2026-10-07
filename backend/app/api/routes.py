@@ -112,50 +112,25 @@ def get_rules() -> dict:
     }
 
 
-@router.get("/rule-modes", tags=["metadata"])
-def get_rule_modes() -> dict:
-    """Expose both rule bases so the UI can show the 12 vs 27 comparison."""
-    from app.core.fuzzy_engine import RULES, EXTENDED_RULES, PHS_LABELS
-
-    def _pack(rules, prefix):
-        return [
-            {"id": f"{prefix}{i+1}", "DSPD": d, "LTBF": l, "Qd": q,
-             "PHS": out, "PHS_label": PHS_LABELS[out], "rationale": rationale}
-            for i, (d, l, q, out, rationale) in enumerate(rules)
-        ]
-
-    return {
-        "base12": {"n_rules": len(RULES), "rules": _pack(RULES, "R")},
-        "extended27": {"n_rules": len(EXTENDED_RULES), "rules": _pack(EXTENDED_RULES, "R")},
-        "default": "base12",
-    }
-
-
 # ---------------------------------------------------------------------------
 # OSS longitudinal study (powers the Study / Era Shift / Calibration tabs)
 # ---------------------------------------------------------------------------
 @router.get("/study", tags=["study"])
-def get_study(rule_mode: str = "base12") -> dict:
-    """Run the full OSS longitudinal study and return discriminative power,
-    era comparison, the project x quarter state heatmap, and the time series.
-
-    Query param rule_mode = 'base12' (default-of-record) or 'extended27'.
+def get_study() -> dict:
+    """OSS longitudinal feasibility study (Section 5 of the manuscript) on the
+    re-collected GitHub data.
     """
     from app.study import run_study
-    try:
-        return run_study(rule_mode)
-    except ValueError as exc:
-        raise HTTPException(400, str(exc))
+    return run_study()
 
 
-@router.get("/study/sensitivity", tags=["study"])
-def get_sensitivity() -> dict:
-    """Reproduce the scaling-factor sensitivity sweep (Addendum, Table XI):
-    the entropy of the peak-membership distribution for each candidate k on
-    each input axis, with the entropy-maximising k highlighted.
+@router.get("/study/calibration", tags=["study"])
+def get_calibration() -> dict:
+    """Scaling factors anchored on the Pre-AI era, the entropy of the input
+    zones as a diagnostic, and the leave-one-project-out check (Addendum).
     """
-    from app.study import sensitivity_sweep
-    return sensitivity_sweep()
+    from app.study import calibration_report
+    return calibration_report()
 
 
 @router.get("/health", tags=["meta"])

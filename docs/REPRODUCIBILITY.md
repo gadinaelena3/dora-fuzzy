@@ -1,4 +1,4 @@
-﻿# Reproducibility
+# Reproducibility
 
 Every claim the manuscript makes about the
 fuzzy DSS can be verified by running one of the commands below from a
@@ -55,10 +55,7 @@ C — Precipice (AI-Tax Risk)        25     15    0.8         9.29    Critical R
 ```
 
 The exit code is `0` if all three linguistic-state assignments match the
-manuscript, and `1` otherwise. See
-[`METHODOLOGY.md`](METHODOLOGY.md#paper-vs-model--numerical-drift) for a
-note on the small crisp-PHS divergence in Scenario C and what it means
-for the §4 rewrite.
+manuscript, and `1` otherwise.
 
 ---
 
@@ -69,16 +66,16 @@ cd backend
 python -m pytest tests/ -v
 ```
 
-Expected: 36 tests, all passing, in a few seconds. Test categories:
+Expected: 35 tests, all passing, in a few seconds. Test categories:
 
 - `TestMembershipParameters` — Tables II, IV, VI parity (3 tests)
 - `TestRuleBase` — 12-rule base integrity (4 tests)
 - `TestPaperScenarios` — §4 personas (3 tests)
 - `TestEdgeCases` — clamping, no-rule fallback, Qd=0 fragile (5 tests)
 - `TestOutputContract` — PHS bounds, state validity, MF export (4 tests)
-- API integration tests — every route (8 tests)
-- `test_study` — calibration constants locked, rule-mode toggle, study
-  reproducibility, sensitivity optima, era-significance pattern (9 tests)
+- API integration tests — every route, including the study endpoints (10 tests)
+- `test_study` — anchored scaling factors, rule base, Section 5 values
+  (state distribution, H, fallback rate, Table XI), held-out check (6 tests)
 
 If any test in `TestMembershipParameters` or `TestRuleBase` fails, the
 implementation has drifted from the manuscript and the test name pinpoints
@@ -86,14 +83,20 @@ which table needs reconciling.
 
 ---
 
-## 5. Reproducing the OSS longitudinal sample
+## 5. Reproducing the Section 5 study
 
-The data file `data/sample_projects.csv` contains 30 OSS-shaped project
-quarters spanning the AI inflection point (≈2021–2024). Each row gives a
-plausible (DSPD, LTBF, Qd) triple for a real OSS project at a particular
-quarter, derived from public release-cadence and PR-throughput data.
+```bash
+cd backend
+python -m scripts.run_study
+```
 
-Run it through the engine via the UI (Batch tab) or the CLI:
+The study is computed from `backend/data/study/quarterly_signals.csv` (raw signals
+of the 144 project-quarters; the pull-request records are in the replication package
+https://github.com/gadinaelena3/oss-dora-fuzzy). The outputs in `results/` are the
+values of Tables X and XI of the manuscript.
+
+`data/sample_projects.csv` holds the DSS inputs of the same 144 project-quarters and
+can be run through the engine from the Batch tab or the CLI:
 
 ```bash
 curl -F "file=@data/sample_projects.csv" http://localhost:8000/api/assess-batch \

@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from dataclasses import dataclass, field, asdict
 from typing import Dict, List, Tuple
@@ -59,7 +59,7 @@ PHS_LABELS = {
 
 
 # ---------------------------------------------------------------------------
-# Rule base (Table VI — 12 rules, Mamdani-style)
+# Rule base (Table VII — 12 rules, Mamdani-style)
 # ---------------------------------------------------------------------------
 # Each rule: (DSPD label, LTBF label, Qd label, PHS label, rationale)
 RULES: List[Tuple[str, str, str, str, str]] = [
@@ -76,65 +76,6 @@ RULES: List[Tuple[str, str, str, str, str]] = [
     ("average", "nominal",  "resilient", "high_performance", "R11: Exceptional stability despite avg throughput."),
     ("high",    "rapid",    "fragile",   "critical_risk",    "R12: Fake Speed; prone to collapse."),
 ]
-
-# ---------------------------------------------------------------------------
-# Extended rule base (27 rules — full 3x3x3 antecedent coverage)
-# ---------------------------------------------------------------------------
-# The 12-rule base above is the manuscript's default-of-record (Table VI); all
-# published Section 5 figures are produced with it. Section 5 reports that a
-# share of project-quarters on live data fall outside those 12 rules and
-# default to the neutral PHS = 50 fallback. The Addendum identifies completing
-# the rule base as future work.
-#
-# EXTENDED_RULES completes the 3x3x3 = 27 antecedent combinations. The 15 rules
-# not in the original base are added with consequents derived by a documented
-# monotonic heuristic (higher DSPD, lower LTBF, higher Qd -> healthier state),
-# so no antecedent combination falls through to the fallback. This is exposed
-# as an OPTIONAL engine mode for reviewers to inspect the fallback-rate
-# reduction; it is NOT the default and does not alter any published number
-# unless explicitly selected.
-_EXTENDED_EXTRA: List[Tuple[str, str, str, str, str]] = [
-    ("low",     "rapid",    "resilient", "sustainable",      "E13: Low volume but fast & resilient - healthy small team."),
-    ("low",     "rapid",    "stable",    "at_risk",          "E14: Fast and stable but very low throughput."),
-    ("low",     "rapid",    "fragile",   "at_risk",          "E15: Fast but fragile at low volume."),
-    ("low",     "nominal",  "resilient", "sustainable",      "E16: Modest steady team, high quality."),
-    ("low",     "nominal",  "fragile",   "critical_risk",    "E17: Low volume, fragile quality - failing."),
-    ("low",     "sluggish", "resilient", "at_risk",          "E18: Slow but careful; underperforming on speed."),
-    ("low",     "sluggish", "stable",    "at_risk",          "E19: Slow, low volume - stalled but not broken."),
-    ("average", "rapid",    "resilient", "high_performance", "E20: Balanced volume, fast & resilient."),
-    ("average", "rapid",    "fragile",   "at_risk",          "E21: Fast but fragile at average volume."),
-    ("average", "nominal",  "fragile",   "at_risk",          "E22: Average team, fragile quality."),
-    ("average", "sluggish", "resilient", "sustainable",      "E23: Slow but resilient; quality compensates."),
-    ("average", "sluggish", "stable",    "at_risk",          "E24: Average volume slowed by review overhead."),
-    ("high",    "nominal",  "resilient", "elite_ai",         "E25: High throughput, resilient - near-elite."),
-    ("high",    "nominal",  "fragile",   "at_risk",          "E26: High volume, fragile quality - AI churn risk."),
-    ("high",    "sluggish", "resilient", "sustainable",      "E27: High volume, slow reviews, but resilient."),
-]
-EXTENDED_RULES: List[Tuple[str, str, str, str, str]] = RULES + _EXTENDED_EXTRA
-
-# Active rule set is switchable at runtime. Default = the 12-rule base.
-_ACTIVE_RULES: List[Tuple[str, str, str, str, str]] = RULES
-
-
-def set_rule_mode(mode: str = "base12") -> None:
-    """Select the active rule base.
-
-    'base12'     -> manuscript Table VI (default-of-record; all Section 5 numbers).
-    'extended27' -> full 3x3x3 coverage (optional; demonstrates fallback-rate
-                    reduction). Does not change published numbers unless chosen.
-    """
-    global _ACTIVE_RULES
-    if mode == "extended27":
-        _ACTIVE_RULES = EXTENDED_RULES
-    elif mode == "base12":
-        _ACTIVE_RULES = RULES
-    else:
-        raise ValueError(f"Unknown rule mode: {mode!r} (use 'base12' or 'extended27').")
-
-
-def active_rule_count() -> int:
-    return len(_ACTIVE_RULES)
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -204,7 +145,7 @@ def infer(dspd: float, ltbf: float, qd: float) -> InferenceResult:
     aggregated = np.zeros_like(PHS_UNIVERSE)
     rule_log: List[Dict] = []
 
-    for idx, (d_lbl, l_lbl, q_lbl, out_lbl, rationale) in enumerate(_ACTIVE_RULES, start=1):
+    for idx, (d_lbl, l_lbl, q_lbl, out_lbl, rationale) in enumerate(RULES, start=1):
         firing = min(mu_dspd[d_lbl], mu_ltbf[l_lbl], mu_qd[q_lbl])
         clipped = np.fmin(firing, _MFS_PHS[out_lbl])
         aggregated = np.fmax(aggregated, clipped)

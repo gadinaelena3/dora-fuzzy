@@ -39,7 +39,6 @@ export const api = {
 
   membershipCurves: () => request('/membership-curves'),
   rules: () => request('/rules'),
-  ruleModes: () => request('/rule-modes'),
-  study: (ruleMode = 'base12') => request(`/study?rule_mode=${ruleMode}`),
-  sensitivity: () => request('/study/sensitivity'),
+  study: () => request('/study'),
+  calibration: () => request('/study/calibration'),
 };
