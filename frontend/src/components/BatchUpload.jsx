@@ -53,8 +53,7 @@ export default function BatchUpload() {
         Upload a CSV with the columns <code>dspd</code>, <code>ltbf</code>, <code>qd</code>,
         and (optional) <code>project_name</code>. Each row is run through the full Mamdani
         inference pipeline and assigned a Project Health Score plus linguistic state.
-        Use this for the OSS longitudinal study and the industrial workshop ranking exercise
-        described in the revision plan.
+        Use this for the OSS longitudinal study and the ranking exercise of the manuscript.
       </p>
 
       {/* Upload zone */}

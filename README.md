@@ -2,10 +2,10 @@
 
 Reference implementation accompanying:
 
-> Udrescu A., Udrescu E.,Suduc A.-M., Bîzoi M.,  (2026).
+> Udrescu A., Udrescu E., Suduc A.-M., Bîzoi M. (2026).
 > A Fuzzy Hybrid Decision Support System (DSS) to Govern Non-linear Dynamics
 > and Uncertainty in AI-Augmented Software Development.
-> Journal of Systems & Software (under revision, JSSOFTWARE-D-26-00371).
+> Journal of Systems & Software (under review, JSSOFTWARE-D-26-00371).
 
 This repository implements the Mamdani-style fuzzy inference system described
 in the manuscript — three input metrics (DSPD, LTBF, Qd), nine membership
@@ -101,6 +101,20 @@ and `calibration.json`. The same code backs `/api/study` and `/api/study/calibra
 
 ---
 
+## Reproducing the ranking exercise of Section 6
+
+```bash
+cd backend
+python scripts/ranking_exercise.py
+```
+
+Reads the squad inputs and the expert consensus ranks of Table XIV from
+`data/ranking_exercise.csv`, scores them with the engine and writes
+`results/ranking_exercise.json`: scores, rules fired, ranks, Spearman's rₛ = 0.63
+(exact permutation p = 0.10) and Kendall's τ-b = 0.57 (p = 0.07), n = 8.
+
+---
+
 ## What's in here
 
 ```
@@ -111,15 +125,16 @@ fuzzy-dss/
 │   ├── app/api/          REST routes & Pydantic schemas
 │   ├── data/study/       quarterly_signals.csv — raw signals of the 144 project-quarters
 │   ├── tests/            tests pinning the implementation to the paper
-│   └── scripts/          run_study · reproduce_paper_scenarios
+│   └── scripts/          run_study · reproduce_paper_scenarios · ranking_exercise
 ├── frontend/             React UI (Vite + Recharts)
 │   └── src/components/   Assess · Batch · OSS Study · Era Shift · Calibration · Rule Base
 ├── docs/
 │   └── REPRODUCIBILITY.md  how to verify every claim
 ├── data/
 │   ├── paper_scenarios.csv  the three scenarios of Appendix A
+│   ├── ranking_exercise.csv squad inputs and expert ranks of Table XIV
 │   └── sample_projects.csv  DSS inputs of the 144 project-quarters (for the Batch tab)
-├── results/              study outputs written by run_study
+├── results/              outputs written by run_study and ranking_exercise
 └── docker-compose.yml
 ```
 

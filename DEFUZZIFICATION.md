@@ -241,39 +241,35 @@ MembershipPlot renders curves with current values marked
 
 ### Input
 ```
-DSPD = 22.0  (high productivity)
-LTBF = 6.0   (rapid delivery)
+DSPD = 22.0  (high volume)
+LTBF = 3.0   (rapid delivery)
 Qd   = 7.5   (resilient quality)
 ```
 
 ### Fuzzification (frontend display)
-- DSPD 22.0 → {low: 0, average: 0.24, high: 0.76}  ← MembershipPlot shows marker at x=22
-- LTBF 6.0  → {rapid: 0.4, nominal: 0.32, sluggish: 0}
-- Qd 7.5    → {fragile: 0, stable: 0.1, resilient: 0.9}
+- DSPD 22.0 → {low: 0, average: 0, high: 1.0}
+- LTBF 3.0  → {rapid: 0.67, nominal: 0, sluggish: 0}
+- Qd 7.5    → {fragile: 0, stable: 0, resilient: 1.0}
 
 ### Rule Firing (backend log)
-- R1 (high ∧ rapid ∧ resilient): firing = min(0.76, 0.4, 0.9) = 0.4 → clips elite_ai
-- R2 (high ∧ rapid ∧ stable): firing = min(0.76, 0.4, 0.1) = 0.1 → clips high_performance
-- ... (other rules fire with lower strengths)
-- Aggregated MF = max of all clipped consequents
+- R1 (high ∧ rapid ∧ resilient): firing = min(1.0, 0.67, 1.0) = 0.67 → clips elite_ai
+- No other rule fires
+- Aggregated MF = elite_ai clipped at 0.67
 
 ### Defuzzification (backend calculation)
-- Centroid of aggregated MF = 82.34
-- At PHS = 82.34:
-  - critical_risk μ = 0
-  - at_risk μ = 0
-  - sustainable μ = 0.02
-  - high_performance μ = 0.45
-  - elite_ai μ = 0.82 ← dominant
-- Result: phs = 82.34, state = "Elite AI Maturity", membership = 0.82
+- Centroid of aggregated MF = 87.33
+- At PHS = 87.33: elite_ai μ = 1.0, all other sets μ = 0
+- Result: phs = 87.33, state = "Elite AI Maturity"
+
+This is Scenario A of the manuscript (Appendix A).
 
 ### Frontend Display (PHSGauge)
 ```
-     82.3
+     87.3
   Elite AI Maturity
-  ████████████████░ (82% filled bar)
+  █████████████████ (87% filled bar)
   
-  dominant-state membership μ = 0.820
+  dominant-state membership μ = 1.000
 ```
 
 ---

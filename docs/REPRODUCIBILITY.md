@@ -159,7 +159,7 @@ Should report `n_rules: 12` with R1's antecedents being
 | nginx (image) | 1.27-alpine |
 
 These are the versions used to run the test suite and to capture the
-results in the rebuttal letter. Newer minor versions are likely fine but
+results reported in the paper. Newer minor versions are likely fine but
 unverified.
 
 ---

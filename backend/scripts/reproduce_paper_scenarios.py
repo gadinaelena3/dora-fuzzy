@@ -25,7 +25,7 @@ SCENARIOS = [
 
 def main() -> int:
     print("=" * 78)
-    print("Reproducing 4 scenarios — Suduc et al., JSS 2026 (under revision)")
+    print("Reproducing 4 scenarios — Suduc et al., JSS 2026 (under review)")
     print("=" * 78)
     print(f"{'Scenario':<30} {'DSPD':>6} {'LTBF':>6} {'Qd':>6} "
           f"{'PHS (model)':>12} {'PHS (paper)':>12} {'State':<22}")

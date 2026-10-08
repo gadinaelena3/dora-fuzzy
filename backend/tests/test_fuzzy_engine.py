@@ -41,7 +41,7 @@ class TestMembershipParameters:
 
 
 # ---------------------------------------------------------------------------
-# Rule base parity (Table VI – 12 rules)
+# Rule base parity (Table VII – 12 rules)
 # ---------------------------------------------------------------------------
 class TestRuleBase:
     def test_twelve_rules(self):
@@ -81,7 +81,7 @@ class TestPaperScenarios:
 
 
 # ---------------------------------------------------------------------------
-# Robustness / edge cases (R2 asked for edge-case behaviour of Qd)
+# Robustness / edge cases of Qd
 # ---------------------------------------------------------------------------
 class TestEdgeCases:
     def test_zero_inputs_do_not_crash(self):

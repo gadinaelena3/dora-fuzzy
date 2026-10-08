@@ -174,11 +174,6 @@ export default function EraShift() {
             above the consequent of Rule R10 (At Risk, 35) that fires afterwards. This is a
             defect of the incomplete rule base, not a finding about the project.
           </li>
-          <li>
-            An earlier version of the study reported a significant positive shift for
-            rust-lang/rust. It was produced by a data collection truncated at 1,000 pull
-            requests per quarter and has been withdrawn.
-          </li>
         </ul>
       </div>
     </div>

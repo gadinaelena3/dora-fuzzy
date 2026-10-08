@@ -18,7 +18,7 @@ app = FastAPI(
         "Reference implementation of the Fuzzy Inference System described in "
         "Suduc et al., 'A Fuzzy Hybrid Decision Support System (DSS) to Govern "
         "Non-linear Dynamics and Uncertainty in AI-Augmented Software "
-        "Development', Journal of Systems & Software (under revision, 2026). "
+        "Development', Journal of Systems & Software (under review, 2026). "
         "Includes the Section 5 OSS longitudinal feasibility study (/api/study) "
         "and the calibration report of the Addendum (/api/study/calibration)."
     ),

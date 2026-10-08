@@ -97,7 +97,7 @@ def get_membership_curves() -> MembershipCurves:
 
 @router.get("/rules", tags=["metadata"])
 def get_rules() -> dict:
-    """Return the 12-rule base (Table VI) for display in the UI."""
+    """Return the 12-rule base (Table VII) for display in the UI."""
     return {
         "n_rules": len(RULES),
         "rules": [

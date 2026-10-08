@@ -151,8 +151,8 @@ export default function Calibration() {
       <p style={{ fontSize: '0.9rem', color: 'var(--ink-2)', marginBottom: 'var(--s-4)' }}>
         For each candidate k on one axis, every project-quarter is assigned to the fuzzy set
         with the highest membership and the Shannon entropy of the three-zone distribution is
-        computed. An earlier version of the study selected k by maximising this entropy, which
-        was circular. It is shown here only to locate the anchored values.
+        computed. Selecting k by maximising this entropy would be circular; it is shown here
+        only to locate the anchored values.
       </p>
       {axes.map((axis) => (
         <AxisEntropy key={axis} axis={axis} info={data.axes[axis]} maxEntropy={data.max_entropy_bits} />
