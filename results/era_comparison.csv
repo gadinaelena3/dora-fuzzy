@@ -1,0 +1,7 @@
+project_id,repo,n_pre,n_ai,phs_pre_mean,phs_ai_mean,phs_shift,mwu_U,mwu_p,cliffs_delta,significant_05,significant_bonferroni
+vscode,microsoft/vscode,8,9,60.0,76.02,16.02,72.0,0.0002,1.0,True,True
+django,django/django,8,9,54.69,56.66,1.97,34.0,0.8817,-0.056,False,False
+numpy,numpy/numpy,8,9,62.11,59.22,-2.89,31.0,0.6278,-0.139,False,False
+rust,rust-lang/rust,8,9,48.12,40.27,-7.86,19.5,0.0907,-0.458,False,False
+kubernetes,kubernetes/kubernetes,8,9,43.54,34.4,-9.15,28.5,0.4508,-0.208,False,False
+react,facebook/react,8,9,63.94,53.81,-10.13,16.0,0.0536,-0.556,False,False

@@ -1,0 +1,187 @@
+{
+  "squads": [
+    {
+      "squad": "Athena",
+      "dspd": 22.3,
+      "ltbf": 3.1,
+      "qd": 7.2,
+      "rules": [
+        {
+          "id": "R1",
+          "strength": 0.633
+        }
+      ],
+      "phs": 87.23,
+      "state": "Elite AI Maturity",
+      "expert_rank": 1,
+      "dss_rank": 1.0,
+      "d": 0.0
+    },
+    {
+      "squad": "Boreas",
+      "dspd": 16.1,
+      "ltbf": 5.2,
+      "qd": 4.6,
+      "rules": [
+        {
+          "id": "R4",
+          "strength": 0.2
+        }
+      ],
+      "phs": 60.0,
+      "state": "Sustainable",
+      "expert_rank": 2,
+      "dss_rank": 4.0,
+      "d": 2.0
+    },
+    {
+      "squad": "Chronos",
+      "dspd": 11.4,
+      "ltbf": 7.1,
+      "qd": 5.9,
+      "rules": [
+        {
+          "id": "R11",
+          "strength": 0.56
+        }
+      ],
+      "phs": 72.5,
+      "state": "High Performance",
+      "expert_rank": 4,
+      "dss_rank": 2.0,
+      "d": -2.0
+    },
+    {
+      "squad": "Delphi",
+      "dspd": 24.8,
+      "ltbf": 16.7,
+      "qd": 2.7,
+      "rules": [
+        {
+          "id": "R10",
+          "strength": 0.833
+        }
+      ],
+      "phs": 35.0,
+      "state": "At Risk",
+      "expert_rank": 3,
+      "dss_rank": 7.0,
+      "d": 4.0
+    },
+    {
+      "squad": "Echidna",
+      "dspd": 12.2,
+      "ltbf": 7.3,
+      "qd": 3.1,
+      "rules": [
+        {
+          "id": "R5",
+          "strength": 0.9
+        }
+      ],
+      "phs": 60.0,
+      "state": "Sustainable",
+      "expert_rank": 5,
+      "dss_rank": 4.0,
+      "d": -1.0
+    },
+    {
+      "squad": "Fenix",
+      "dspd": 13.5,
+      "ltbf": 6.4,
+      "qd": 3.4,
+      "rules": [
+        {
+          "id": "R5",
+          "strength": 0.625
+        }
+      ],
+      "phs": 60.0,
+      "state": "Sustainable",
+      "expert_rank": 6,
+      "dss_rank": 4.0,
+      "d": -2.0
+    },
+    {
+      "squad": "Gaia",
+      "dspd": 9.1,
+      "ltbf": 8.2,
+      "qd": 2.3,
+      "rules": [
+        {
+          "id": "R5",
+          "strength": 0.275
+        },
+        {
+          "id": "R9",
+          "strength": 0.18
+        }
+      ],
+      "phs": 49.87,
+      "state": "Sustainable",
+      "expert_rank": 7,
+      "dss_rank": 6.0,
+      "d": -1.0
+    },
+    {
+      "squad": "Helios",
+      "dspd": 5.8,
+      "ltbf": 19.4,
+      "qd": 0.8,
+      "rules": [
+        {
+          "id": "R8",
+          "strength": 0.84
+        }
+      ],
+      "phs": 9.7,
+      "state": "Critical Risk",
+      "expert_rank": 8,
+      "dss_rank": 8.0,
+      "d": 0.0
+    }
+  ],
+  "n": 8,
+  "spearman": 0.6343,
+  "spearman_p_exact": 0.1021,
+  "spearman_p_t": 0.0912,
+  "kendall_tau_b": 0.5669,
+  "kendall_p_exact": 0.0729,
+  "sum_d2": 30.0,
+  "largest_d2": [
+    "Delphi",
+    16.0
+  ],
+  "critical_spearman_0.05": 0.7381,
+  "tied_scores": {
+    "60.0": 3
+  },
+  "single_input": {
+    "dspd": {
+      "spearman": 0.8333,
+      "p_exact": 0.0154
+    },
+    "ltbf": {
+      "spearman": 0.6905,
+      "p_exact": 0.0694
+    },
+    "qd": {
+      "spearman": 0.7857,
+      "p_exact": 0.0279
+    }
+  },
+  "leave_one_out": {
+    "Athena": 0.4447,
+    "Boreas": 0.6307,
+    "Chronos": 0.7042,
+    "Delphi": 0.8895,
+    "Echidna": 0.6667,
+    "Fenix": 0.6667,
+    "Gaia": 0.593,
+    "Helios": 0.4447
+  },
+  "tie_break_range": [
+    0.5238,
+    0.7143
+  ]
+}
