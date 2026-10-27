@@ -79,9 +79,10 @@ python scripts/reproduce_paper_scenarios.py
 Expected output:
 
 ```
-A — Elite AI (Synergy)             22      3    7.5        87.33    Elite AI Maturity ✓
-B — Human Baseline                 12      7    3.0        60.00    Sustainable       ✓
-C — Precipice (AI-Tax Risk)        25     15    0.8         9.29    Critical Risk     ✓
+Scenario                        DSPD  LTBF    Qd  PHS (model)  PHS (paper)  State
+A — Elite AI (Synergy)            22     3   7.5        87.33         87.3  Elite AI Maturity    ✓
+B — Human Baseline                12     7   3.0        60.00         60.0  Sustainable          ✓
+C — Precipice (AI-Tax Risk)       25    15   0.8         9.29          9.3  Critical Risk        ✓
 ```
 
 All three scenarios reproduce the scores and linguistic states reported in
@@ -150,7 +151,7 @@ python -m pytest tests/ -v
 The test suite has three layers:
 
 1. Parameter parity — anchors the implementation to Tables II, IV, VI, VII.
-2. Paper scenarios and study — the Appendix A personas and the Section 5 values must reproduce.
+2. Paper scenarios, study and ranking exercise — the Appendix A personas, the Section 5 values and Table XIV must reproduce.
 3. Edge cases & contracts — clamping, dominant-state selection, API I/O.
 
 If any of the parameter-parity tests fail, the code has drifted from the

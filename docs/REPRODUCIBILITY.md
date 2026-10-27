@@ -38,7 +38,7 @@ host-side port (the part before the colon).
 
 ---
 
-## 3. Reproducing the manuscript's §4 scenarios
+## 3. Reproducing the scenarios of Appendix A
 
 ```bash
 cd backend
@@ -49,13 +49,14 @@ python scripts/reproduce_paper_scenarios.py
 Expected output:
 
 ```
-A — Elite AI (Synergy)             22      3    7.5        87.33    Elite AI Maturity    ✓
-B — Human Baseline                 12      7    3.0        60.00    Sustainable          ✓
-C — Precipice (AI-Tax Risk)        25     15    0.8         9.29    Critical Risk        ✓
+Scenario                        DSPD  LTBF    Qd  PHS (model)  PHS (paper)  State
+A — Elite AI (Synergy)            22     3   7.5        87.33         87.3  Elite AI Maturity    ✓
+B — Human Baseline                12     7   3.0        60.00         60.0  Sustainable          ✓
+C — Precipice (AI-Tax Risk)       25    15   0.8         9.29          9.3  Critical Risk        ✓
 ```
 
-The exit code is `0` if all three linguistic-state assignments match the
-manuscript, and `1` otherwise.
+The exit code is `0` if the score (to one decimal) and the linguistic state of
+all three scenarios match Appendix A of the manuscript, and `1` otherwise.
 
 ---
 
@@ -66,16 +67,18 @@ cd backend
 python -m pytest tests/ -v
 ```
 
-Expected: 35 tests, all passing, in a few seconds. Test categories:
+Expected: 44 tests, all passing, in a few seconds. Test categories:
 
 - `TestMembershipParameters` — Tables II, IV, VI parity (3 tests)
 - `TestRuleBase` — 12-rule base integrity (4 tests)
-- `TestPaperScenarios` — §4 personas (3 tests)
+- `TestPaperScenarios` — Appendix A personas (3 tests)
 - `TestEdgeCases` — clamping, no-rule fallback, Qd=0 fragile (5 tests)
 - `TestOutputContract` — PHS bounds, state validity, MF export (4 tests)
 - API integration tests — every route, including the study endpoints (10 tests)
 - `test_study` — anchored scaling factors, rule base, Section 5 values
   (state distribution, H, fallback rate, Table XI), held-out check (6 tests)
+- `test_ranking_exercise` — Table XIV scores, states and rules per squad, and
+  the statistics of Section 6.4 (9 tests)
 
 If any test in `TestMembershipParameters` or `TestRuleBase` fails, the
 implementation has drifted from the manuscript and the test name pinpoints

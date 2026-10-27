@@ -16,7 +16,7 @@ app = FastAPI(
     title="Fuzzy DSS for AI-Augmented Software Development",
     description=(
         "Reference implementation of the Fuzzy Inference System described in "
-        "Suduc et al., 'A Fuzzy Hybrid Decision Support System (DSS) to Govern "
+        "Udrescu et al., 'A Fuzzy Hybrid Decision Support System (DSS) to Govern "
         "Non-linear Dynamics and Uncertainty in AI-Augmented Software "
         "Development', Journal of Systems & Software (under review, 2026). "
         "Includes the Section 5 OSS longitudinal feasibility study (/api/study) "

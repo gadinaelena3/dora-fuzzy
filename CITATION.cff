@@ -4,25 +4,24 @@ title: "Fuzzy DSS for AI-Augmented Software Development"
 abstract: >-
   Reference implementation of a Mamdani-style fuzzy inference system that
   classifies software-engineering project health under AI-augmented delivery,
-  using three input metrics (DSPD, LTBF, Qd) and a 12-rule expert-elicited
-  rule base.
+  using three input metrics (DSPD, LTBF, Qd) and a 12-rule rule base.
 authors:
+  - family-names: Udrescu
+    given-names: Alexandru
+    affiliation: "Valahia University of Târgoviște, Romania"
+  - family-names: Udrescu
+    given-names: Elena
+    affiliation: "Valahia University of Târgoviște, Romania"
   - family-names: Suduc
     given-names: Ana-Maria
     affiliation: "Valahia University of Târgoviște, Romania"
     email: ana.suduc@valahia.ro
-  - family-names: Udrescu
-    given-names: Elena
-    affiliation: "Valahia University of Târgoviște, Romania"
   - family-names: Bîzoi
     given-names: Mihai
     affiliation: "Valahia University of Târgoviște, Romania"
-  - family-names: Udrescu
-    given-names: Alexandru
-    affiliation: "Valahia University of Târgoviște, Romania"
 version: 0.2.0
 license: MIT
-repository-code: ""
+repository-code: "https://github.com/gadinaelena3/dora-fuzzy"
 keywords:
   - fuzzy inference
   - decision support system
@@ -35,14 +34,14 @@ preferred-citation:
     A Fuzzy Hybrid Decision Support System (DSS) to Govern Non-linear
     Dynamics and Uncertainty in AI-Augmented Software Development
   authors:
-    - family-names: Suduc
-      given-names: Ana-Maria
-    - family-names: Gădina
-      given-names: Elena
-    - family-names: Bîzoi
-      given-names: Mihai
     - family-names: Udrescu
       given-names: Alexandru
+    - family-names: Udrescu
+      given-names: Elena
+    - family-names: Suduc
+      given-names: Ana-Maria
+    - family-names: Bîzoi
+      given-names: Mihai
   journal: "Journal of Systems and Software"
   year: 2026
   notes: "Manuscript JSSOFTWARE-D-26-00371, under review."

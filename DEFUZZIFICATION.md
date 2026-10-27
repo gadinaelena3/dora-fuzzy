@@ -1,4 +1,4 @@
-﻿# Defuzzification Logic Documentation
+# Defuzzification Logic Documentation
 
 ## Overview
 
@@ -9,11 +9,11 @@ Defuzzification is the final step of the Mamdani fuzzy inference system that con
 ## Backend Implementation
 
 ### Location
-File: `backend/app/core/fuzzy_engine.py` (lines 195–210)
+File: `backend/app/core/fuzzy_engine.py`, function `infer()`
 
 ### Process: Centre-of-Gravity (Centroid) Method
 
-The defuzzification uses the Centre-of-Gravity method as specified in Equation 5 of the paper:
+The defuzzification uses the Centre-of-Gravity method as specified in Eq. (6) of the paper:
 
 ```
 PHS = Σ(x · μ_aggregated(x)) / Σ(μ_aggregated(x))
@@ -115,23 +115,30 @@ Input: `AssessmentRequest` (DSPD, LTBF, Qd, optional project_name)
 Output: `AssessmentResponse` with defuzzification results:
 ```json
 {
-  "project_name": "ProjectA",
-  "inputs": {"DSPD": 25.0, "LTBF": 8.5, "Qd": 6.2},
-  "phs": 68.45,
-  "linguistic_state": "High Performance",
-  "state_membership": 0.7834,
+  "project_name": "Gaia",
+  "inputs": {"DSPD": 9.1, "LTBF": 8.2, "Qd": 2.3},
+  "phs": 49.87,
+  "linguistic_state": "Sustainable",
+  "state_membership": 0.3246,
   "input_memberships": {
-    "DSPD": {"low": 0, "average": 0.15, "high": 0.85},
-    "LTBF": {"rapid": 0, "nominal": 0.42, "sluggish": 0},
-    "Qd": {"fragile": 0, "stable": 0.3, "resilient": 0.7}
+    "DSPD": {"low": 0.18, "average": 0.275, "high": 0.0},
+    "LTBF": {"rapid": 0.0, "nominal": 0.6, "sluggish": 0.0},
+    "Qd": {"fragile": 0.0, "stable": 0.6111, "resilient": 0.0}
   },
   "rule_activations": [
     {
-      "id": "R1",
-      "antecedents": {"DSPD": "high", "LTBF": "rapid", "Qd": "resilient"},
-      "consequent": "elite_ai",
-      "firing_strength": 0.0,
-      "rationale": "R1: Maximum synergy; AI dividend fully realised."
+      "id": "R5",
+      "antecedents": {"DSPD": "average", "LTBF": "nominal", "Qd": "stable"},
+      "consequent": "sustainable",
+      "firing_strength": 0.275,
+      "rationale": "R5: High-performing human team, balanced."
+    },
+    {
+      "id": "R9",
+      "antecedents": {"DSPD": "low", "LTBF": "nominal", "Qd": "stable"},
+      "consequent": "at_risk",
+      "firing_strength": 0.18,
+      "rationale": "R9: Safe but underperforming vs. industry medians."
     },
     ...
   ]
@@ -311,8 +318,8 @@ dspd_c = float(np.clip(dspd, DSPD_UNIVERSE[0], DSPD_UNIVERSE[-1]))
 
 ## References
 
-1. Paper: Suduc et al., "A Fuzzy Hybrid Decision Support System (JSS, 2026)"
-   - Equation 5: Centre-of-Gravity defuzzification formula
+1. Paper: Udrescu et al., "A Fuzzy Hybrid Decision Support System (DSS) to Govern Non-linear Dynamics and Uncertainty in AI-Augmented Software Development" (JSS, under review)
+   - Eq. (6): Centre-of-Gravity defuzzification formula
    - Section 3: Membership function parameters & output ranges
 
 2. Library: scikit-fuzzy (`fuzz.defuzz(universe, mf, 'centroid')`)
